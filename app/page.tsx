@@ -20,6 +20,37 @@ const mapEvents = [
   { city: "Berlim", year: "1943", x: 34, y: 24, title: "Centro de gravidade", text: "O dossiê termina em uma cidade sob bombardeio, com o sujeito ainda tentando controlar uma máquina política em colapso." },
 ];
 
+const convergenceNotes = [
+  {
+    year: "1898",
+    label: "OBSERVAÇÃO // I",
+    title: "A cadeira vazia",
+    front: "O mesmo lugar foi reservado em duas recepções, embora nenhum convite carregasse os dois nomes.",
+    reflection: "Reflexão selada: a ausência de uma voz pode ser a forma mais precisa de companhia.",
+  },
+  {
+    year: "1916",
+    label: "OBSERVAÇÃO // II",
+    title: "Verdun, sem assinatura",
+    front: "Um mapa dobrado chegou ao posto de Henry com a rota segura sublinhada em tinta verde.",
+    reflection: "Reflexão selada: ele seguiu a linha porque reconheceu a caligrafia que nunca lhe foi apresentada.",
+  },
+  {
+    year: "1931",
+    label: "OBSERVAÇÃO // III",
+    title: "Viena, 02:13",
+    front: "Dois observadores registraram uma conversa de nove minutos; nenhuma palavra foi audível.",
+    reflection: "Reflexão selada: o entendimento entre os sujeitos cresce no intervalo entre gesto e resposta.",
+  },
+  {
+    year: "1943",
+    label: "OBSERVAÇÃO // IV",
+    title: "Berlim sob ruído",
+    front: "Henry reteve uma mensagem para Astrid até que o bombardeio cessasse. Não a abriu.",
+    reflection: "Reflexão selada: proteger uma escolha alheia também é uma promessa — especialmente quando ninguém a testemunha.",
+  },
+];
+
 const dust = [[8, 14, 3, 12], [17, 62, 4, 18], [28, 28, 2, 15], [38, 80, 5, 13], [48, 8, 3, 18], [60, 49, 4, 14], [70, 23, 2, 17], [80, 71, 4, 12], [91, 38, 3, 16], [12, 89, 4, 16]];
 
 type PillarId = "youssef" | "ahmed" | "third";
@@ -86,13 +117,20 @@ export default function AstridArchive() {
   const [glitch, setGlitch] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
   const [selectedEvent, setSelectedEvent] = useState(mapEvents[0]);
+  const [activeConvergenceCard, setActiveConvergenceCard] = useState<number | null>(null);
+  const [seenConvergenceCards, setSeenConvergenceCards] = useState<number[]>([]);
   const clicksTimer = useRef<number | null>(null);
   const idleTimer = useRef<number | null>(null);
   const henrySection = useRef<HTMLElement | null>(null);
   const { scrollYProgress } = useScroll({ target: henrySection, offset: ["start end", "end start"] });
-  const astridX = useTransform(scrollYProgress, [0, .4, .72, 1], ["-24%", "-12%", "-3%", "-3%"]);
-  const henryX = useTransform(scrollYProgress, [0, .4, .72, 1], ["24%", "12%", "3%", "3%"]);
-  const bondOpacity = useTransform(scrollYProgress, [0, .55, .75], [0, .35, 1]);
+  const astridX = useTransform(scrollYProgress, [0, .38, .74, 1], ["-10vw", "-5vw", "-8px", "-8px"]);
+  const henryX = useTransform(scrollYProgress, [0, .38, .74, 1], ["10vw", "5vw", "8px", "8px"]);
+  const astridY = useTransform(scrollYProgress, [0, .55, .82, 1], [36, 12, 0, 0]);
+  const henryY = useTransform(scrollYProgress, [0, .55, .82, 1], [-36, -12, 0, 0]);
+  const profileScale = useTransform(scrollYProgress, [0, .52, .82, 1], [.92, .97, 1.015, 1.015]);
+  const bondOpacity = useTransform(scrollYProgress, [0, .42, .75], [0, .38, 1]);
+  const coreScale = useTransform(scrollYProgress, [0, .52, .8, 1], [.6, .85, 1.12, 1.12]);
+  const convergenceLevel = Math.min(28 + seenConvergenceCards.length * 18, 100);
 
   useEffect(() => {
     const refresh = () => setClock(new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date()));
@@ -186,7 +224,31 @@ export default function AstridArchive() {
 
     <section className="relic-section section-frame" aria-labelledby="relic-title"><figure className="relic-image"><img src="/lanca.jpg" alt="A Lança de Longinus catalogada" /><div className="relic-halo"><Sparkles size={26} /></div></figure><article><p className="eyebrow">07 / Relíquia Perdida</p><h2 id="relic-title">A Lança de Longinus</h2><p>Enrolada em couro envelhecido e escondida entre identidades de cobertura, a relíquia é o centro gravitacional do arquivo. Lendas Kindred atribuem a ela poder suficiente para ameaçar anciões — e atrair quem atravessa séculos para encontrá-la.</p><div className="relic-status"><BadgeAlert size={17} /><span>ITEM 104 · NÃO REMOVER DO INVÓLUCRO</span></div></article></section>
 
-    <section ref={henrySection} className="henry-section section-frame" aria-labelledby="henry-title"><div className="section-heading henry-heading"><span>08 / Dossiê de Convergência</span><h2 id="henry-title">Sujeito “Henry”</h2><p>Uma análise abstrata de duas presenças que se reconhecem antes mesmo de se explicarem.</p></div><div className="convergence-stage"><motion.article className="person-card astrid-person" style={{ x: astridX }}><img src="/evidence/Astrid2.jpg" alt="Astrid, sujeito A" /><span>SUJEITO A / ASTRID</span><p>Vontade, estratégia e silêncio.</p></motion.article><motion.div className="convergence-line" style={{ opacity: bondOpacity }}><span>CONEXÃO<br />NÃO DECLARADA</span></motion.div><motion.article className="person-card henry-person" style={{ x: henryX }}><img src="/henry.jpg" alt="Henry, sujeito H" /><span>SUJEITO H / HENRY</span><p>Testemunha, contrapeso e eco.</p></motion.article></div><p className="scroll-cue">ROLE PARA APROXIMAR OS ARQUIVOS</p></section>
+    <section ref={henrySection} className="henry-section section-frame" aria-labelledby="henry-title">
+      <div className="henry-dossier-head">
+        <div className="section-heading henry-heading"><span>08 / Dossiê de Convergência</span><h2 id="henry-title">ASTRID <i>↔</i> HENRY</h2><p>Registros cruzados de uma ligação que se aprofunda sem reivindicar nome, posse ou explicação.</p></div>
+        <div className="convergence-meter" aria-live="polite"><div><span>NÍVEL DE CONVERGÊNCIA</span><strong>{String(convergenceLevel).padStart(2, "0")}%</strong></div><div className="meter-track"><motion.i animate={{ width: `${convergenceLevel}%` }} transition={{ type: "spring", stiffness: 120, damping: 20 }} /></div><small>{seenConvergenceCards.length === 0 ? "ABRA OS REGISTROS PARA CALIBRAR O SINAL" : `${seenConvergenceCards.length}/4 REGISTROS CRUZADOS ANALISADOS`}</small></div>
+      </div>
+
+      <div className="convergence-stage">
+        <motion.article className="convergence-profile astrid-profile" style={{ x: astridX, y: astridY, scale: profileScale }}>
+          <div className="profile-index"><span>SUJEITO A</span><b>ASTRID</b><em>ARQUIVO MÓVEL / SÉCULOS EM CAMADAS</em></div>
+          <figure className="profile-portrait astrid-portrait"><img src="/evidence/Astrid2.jpg" alt="Retrato arquivado de Astrid" /><figcaption>OBSERVADA: CONTROLE, ESTRATÉGIA, SILÊNCIO</figcaption></figure>
+          <div className="profile-notes"><p><b>Protocolo de observação:</b> Astrid evita promessas diretas. Ainda assim, cada deslocamento estratégico preserva uma rota possível de retorno para Henry.</p><ul><li>1904 // carta devolvida sem destinatário</li><li>1916 // rota de evacuação deixada em aberto</li><li>1943 // frequências de rádio monitoradas</li></ul></div>
+        </motion.article>
+
+        <motion.div className="magnetic-core" style={{ opacity: bondOpacity, scale: coreScale }} aria-hidden="true"><motion.i animate={{ boxShadow: ["0 0 18px #ff493e55", "0 0 44px #ff493edb", "0 0 18px #ff493e55"], scale: [1, 1.12, 1] }} transition={{ duration: 2.4, repeat: Infinity }} /><span>VÍNCULO<br />NÃO DECLARADO</span><small>↕ ATRAÇÃO DE ARQUIVOS ↕</small></motion.div>
+
+        <motion.article className="convergence-profile henry-profile" style={{ x: henryX, y: henryY, scale: profileScale }}>
+          <div className="profile-index"><span>SUJEITO H</span><b>HENRY</b><em>TESTEMUNHA / CONTRAPESO / ECO</em></div>
+          <motion.figure className="profile-portrait henry-portrait" whileHover={{ scale: 1.025 }} transition={{ type: "spring", stiffness: 180, damping: 15 }}><img src="/henry.jpg" alt="Retrato arquivado de Henry" /><figcaption>OBSERVADO: PRESENÇA, CUIDADO, RESISTÊNCIA</figcaption></motion.figure>
+          <div className="profile-notes"><p><b>Protocolo de observação:</b> Henry não tenta decifrá-la. Sua constância cria uma zona de escuta onde Astrid não precisa transformar toda lembrança em defesa.</p><ul><li>1898 // cadeira reservada em silêncio</li><li>1931 // encontro sem registro oficial</li><li>1943 // mensagem protegida do bombardeio</li></ul></div>
+        </motion.article>
+      </div>
+
+      <div className="observation-ledger"><div className="ledger-heading"><span>LINHA DO TEMPO MAGNÉTICA // INTERSEÇÕES DETECTADAS</span><p>Clique nos cartões para abrir as reflexões subliminares da inteligência.</p></div><div className="convergence-notes">{convergenceNotes.map((note, index) => { const isOpen = activeConvergenceCard === index; return <motion.button key={note.year} type="button" className={`convergence-note ${isOpen ? "is-open" : ""}`} onClick={() => { setActiveConvergenceCard(isOpen ? null : index); if (!isOpen) setSeenConvergenceCards((current) => current.includes(index) ? current : [...current, index]); }} whileHover={{ y: -5 }} whileTap={{ scale: .98 }} aria-pressed={isOpen} aria-label={`${isOpen ? "Fechar" : "Abrir"} registro de ${note.year}: ${note.title}`}><motion.span className="note-inner" animate={{ rotateY: isOpen ? 180 : 0 }} transition={{ duration: .55, type: "spring", stiffness: 160, damping: 17 }}><span className="note-face note-front"><em>{note.year}</em><small>{note.label}</small><b>{note.title}</b><p>{note.front}</p><i>CLIQUE PARA DECODIFICAR</i></span><span className="note-face note-back"><small>CAMADA INTERNA / {note.year}</small><b>REFLEXÃO RECUPERADA</b><p>{note.reflection}</p><i>CLIQUE PARA RETORNAR</i></span></motion.span></motion.button>; })}</div></div>
+      <p className="scroll-cue">ROLE PARA APROXIMAR OS ARQUIVOS · INTERAJA PARA ELEVAR A CONVERGÊNCIA</p>
+    </section>
 
     <section className="map-section section-frame" aria-labelledby="map-title"><div className="section-heading"><span>09 / Mapa Tático</span><h2 id="map-title">150 Anos de Convergência</h2></div><div className="map-layout"><div className="tactical-map"><img src="/mapa.jpg" alt="Mapa tático da jornada de Astrid" />{mapEvents.map((point) => <motion.button key={point.city} type="button" className={`map-pin ${selectedEvent.city === point.city ? "is-selected" : ""}`} style={{ left: `${point.x}%`, top: `${point.y}%` }} onClick={() => setSelectedEvent(point)} whileTap={{ scale: .85 }} aria-label={`${point.city}, ${point.year}`}><MapPin size={20} fill="currentColor" /><span>{point.year}</span></motion.button>)}</div><AnimatePresence mode="wait"><motion.aside key={selectedEvent.city} className="map-detail" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}><span>{selectedEvent.year} · {selectedEvent.city}</span><h3>{selectedEvent.title}</h3><p>{selectedEvent.text}</p><div><Crosshair size={15} /> PONTO DE MEMÓRIA ATIVO</div></motion.aside></AnimatePresence></div></section>
 
