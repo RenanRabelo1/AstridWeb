@@ -1,14 +1,15 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @next/next/no-img-element, jsx-a11y/no-autofocus */
 
 import {
   Activity, Archive, BadgeAlert, ChevronRight, Crosshair, FileLock2,
-  FlaskConical, GlassWater, Landmark, LockKeyhole, MapPin, Medal,
-  Radio, ShieldAlert, Sparkles, Target, Wine,
+  FlaskConical, GlassWater, KeyRound, Lock, LockKeyhole, MapPin, Medal,
+  Radio, ShieldAlert, ShieldCheck, Sparkles, Target, Unlock, Wine, XCircle,
 } from "lucide-react";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
 
 const mapEvents = [
   { city: "Escandinávia", year: "1790", x: 43, y: 14, title: "Identidade apagada", text: "O primeiro registro é uma criança sem nome. O arquivo posterior conecta esta lacuna à identidade Layla e à joia que nunca deixou seu bolso." },
@@ -20,6 +21,14 @@ const mapEvents = [
 ];
 
 const dust = [[8, 14, 3, 12], [17, 62, 4, 18], [28, 28, 2, 15], [38, 80, 5, 13], [48, 8, 3, 18], [60, 49, 4, 14], [70, 23, 2, 17], [80, 71, 4, 12], [91, 38, 3, 16], [12, 89, 4, 16]];
+
+type PillarId = "youssef" | "ahmed" | "third";
+
+const pillarLabels: Record<PillarId, string> = {
+  youssef: "ARQUIVO P-01",
+  ahmed: "ARQUIVO P-02",
+  third: "ARQUIVO P-03",
+};
 
 function TypeLine({ text }: { text: string }) {
   const [shown, setShown] = useState("");
@@ -68,7 +77,11 @@ function CensorTape() {
 export default function AstridArchive() {
   const [clock, setClock] = useState("--:--:--");
   const [medicalOpen, setMedicalOpen] = useState(false);
-  const [thirdPillarOpen, setThirdPillarOpen] = useState(false);
+  const [activePillar, setActivePillar] = useState<PillarId | null>(null);
+  const [unlockedPillars, setUnlockedPillars] = useState<Record<PillarId, boolean>>({ youssef: false, ahmed: false, third: false });
+  const [accessCode, setAccessCode] = useState("");
+  const [accessDenied, setAccessDenied] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
   const [clicks, setClicks] = useState(0);
   const [glitch, setGlitch] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
@@ -106,6 +119,35 @@ export default function AstridArchive() {
     clicksTimer.current = window.setTimeout(() => setClicks(0), 680);
   };
 
+  const openPillar = (pillar: PillarId) => {
+    setActivePillar(pillar);
+    setAccessCode("");
+    setAccessDenied(false);
+    setUnlocking(false);
+  };
+
+  const lockPillar = (pillar: PillarId) => {
+    setUnlockedPillars((current) => ({ ...current, [pillar]: false }));
+  };
+
+  const validatePillarCode = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!activePillar) return;
+    if (accessCode.trim() !== "1790") {
+      setAccessDenied(true);
+      setShakeKey((value) => value + 1);
+      return;
+    }
+    setAccessDenied(false);
+    setUnlocking(true);
+    window.setTimeout(() => {
+      setUnlockedPillars((current) => ({ ...current, [activePillar]: true }));
+      setUnlocking(false);
+      setActivePillar(null);
+      setAccessCode("");
+    }, 1050);
+  };
+
   return <motion.main key={shakeKey} className="archive-shell" onMouseLeave={() => setGlitch(true)} animate={{ x: shakeKey ? [0, -7, 7, -5, 3, 0] : 0, y: shakeKey ? [0, 2, -2, 1, 0] : 0 }} transition={{ duration: .45 }}>
     <div className="crt-layer" aria-hidden="true" />
     <div className="fog-layer" aria-hidden="true"><motion.div className="fog fog-one" animate={{ x: ["-10%", "12%", "-10%"], opacity: [.1, .25, .1] }} transition={{ duration: 22, repeat: Infinity }} />{dust.map(([left, top, size, duration], index) => <motion.i key={index} className="dust" style={{ left: `${left}%`, top: `${top}%`, width: size, height: size }} animate={{ y: [0, -65, 0], x: [0, index % 2 ? 13 : -10, 0], opacity: [.1, .55, .1] }} transition={{ duration, repeat: Infinity, delay: index * .3 }} />)}</div>
@@ -117,9 +159,26 @@ export default function AstridArchive() {
 
     <section className="origins-section section-frame" aria-labelledby="origins-title"><div className="origin-image"><img src="/palestina.jpg" alt="Memória visual da Palestina" /><span>FOLHA RECUPERADA / RAMALÁ</span></div><article className="diary-paper"><div className="section-heading"><span>01 / Origens</span><h2 id="origins-title">A Terra Esquecida</h2></div><p>Antes de Astrid, existia Layla: uma infância entre oliveiras de Ramalá, o cheiro da terra molhada e uma família adotiva que lhe deu um nome. Este fragmento de diário preserva a Palestina como memória íntima — anterior ao sangue, à hierarquia e às guerras.</p><div className="birth-row"><span>DATA DE NASCIMENTO</span><CensorTape /></div><blockquote>“A aldeia não era um mapa. Era a única coisa que não podia ser substituída.”</blockquote></article></section>
 
-    <section className="pillar-grid section-frame" aria-label="Pilares de Astrid"><article className="pillar-card youssef-card"><img src="/youssef.jpg" alt="Registro de Youssef" /><div className="pillar-copy"><div className="section-heading"><span>02 / Primeiro Pilar</span><h2>Youssef</h2></div><p>Descendente da família que acolheu Layla. Registros cifrados indicam transferências clandestinas para mantê-lo vivo e apoiar a defesa de comunidades rurais.</p><div className="transfer-log"><span>REMESSA 06-B · fundos</span><b>CONFIRMADA</b><span>REMESSA 09-C · equipamento</span><b>INTERCEPTADA</b></div></div></article><article className="pillar-card ahmed-card"><img src="/ahmed.jpg" alt="Registro de Ahmed" /><div className="pillar-copy"><div className="section-heading"><span>03 / Segundo Pilar</span><h2>Ahmed</h2></div><p>Testemunha preservada em segurança na Europa. Para Astrid, Ahmed é a última voz capaz de contar o que ocorreu com a aldeia que ela chamava de casa.</p><div className="quote-tag"><Landmark size={14} /> MEMÓRIA VIVA / PROTEÇÃO ATIVA</div></div></article></section>
-
-    <section className="third-pillar section-frame" aria-labelledby="third-title"><div className="lock-sigil"><LockKeyhole size={58} strokeWidth={1} /><span>LVL<br />05</span></div><div><p className="eyebrow">04 / Terceiro Pilar</p><h2 id="third-title">ARQUIVO CLASSIFICADO<br />DE SEGURANÇA MÁXIMA</h2><p>O nome foi removido da cópia de trabalho. Exige nível de acesso cinco e leitura supervisionada.</p></div><button type="button" className="access-button" onClick={() => setThirdPillarOpen(true)}><FileLock2 size={16} /> ACESSAR ARQUIVO <ChevronRight size={16} /></button></section>
+    <section className="pillar-vault section-frame" aria-labelledby="pillars-title">
+      <div className="pillar-vault-heading"><div className="section-heading"><span>02 / Pilares de Humanidade</span><h2 id="pillars-title">Núcleo Humano Protegido</h2></div><p>Três arquivos ultrassecretos. Identidades e conteúdos permanecem inacessíveis sem autenticação.</p></div>
+      <div className="pillar-lock-grid">
+        <article className={`secure-pillar ${unlockedPillars.youssef ? "is-unlocked" : ""}`}>
+          <AnimatePresence mode="wait">
+            {!unlockedPillars.youssef ? <motion.div key="locked-youssef" className="locked-record" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Lock size={34} /><span>{pillarLabels.youssef}</span><strong>IDENTIDADE REDIGIDA</strong><p>CLEARANCE LEVEL 5 NECESSÁRIO</p><button type="button" onClick={() => openPillar("youssef")}><KeyRound size={15} /> INSERIR CÓDIGO</button></motion.div> : <motion.div key="unlocked-youssef" className="released-record" initial={{ opacity: 0, clipPath: "inset(0 0 100% 0)" }} animate={{ opacity: 1, clipPath: "inset(0 0 0% 0)" }}><img src="/youssef.jpg" alt="Registro desbloqueado de Youssef" /><div><span>ARQUIVO P-01 / PRIMEIRO PILAR</span><h3>Youssef</h3><p><TypeLine text="Descendente da família que acolheu Layla. Registros cifrados indicam remessas financeiras e apoio clandestino à resistência camponesa." /></p><button type="button" className="relock-button" onClick={() => lockPillar("youssef")}><Lock size={14} /> TRANCAR ARQUIVO</button></div></motion.div>}
+          </AnimatePresence>
+        </article>
+        <article className={`secure-pillar ${unlockedPillars.ahmed ? "is-unlocked" : ""}`}>
+          <AnimatePresence mode="wait">
+            {!unlockedPillars.ahmed ? <motion.div key="locked-ahmed" className="locked-record" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Lock size={34} /><span>{pillarLabels.ahmed}</span><strong>IDENTIDADE REDIGIDA</strong><p>CLEARANCE LEVEL 5 NECESSÁRIO</p><button type="button" onClick={() => openPillar("ahmed")}><KeyRound size={15} /> INSERIR CÓDIGO</button></motion.div> : <motion.div key="unlocked-ahmed" className="released-record" initial={{ opacity: 0, clipPath: "inset(0 0 100% 0)" }} animate={{ opacity: 1, clipPath: "inset(0 0 0% 0)" }}><img src="/ahmed.jpg" alt="Registro desbloqueado de Ahmed" /><div><span>ARQUIVO P-02 / SEGUNDO PILAR</span><h3>Ahmed</h3><p><TypeLine text="Testemunha mantida em segurança na Europa. Para Astrid, Ahmed é a última memória viva capaz de contar o destino de sua aldeia." /></p><button type="button" className="relock-button" onClick={() => lockPillar("ahmed")}><Lock size={14} /> TRANCAR ARQUIVO</button></div></motion.div>}
+          </AnimatePresence>
+        </article>
+        <article className={`secure-pillar ${unlockedPillars.third ? "is-unlocked" : ""}`}>
+          <AnimatePresence mode="wait">
+            {!unlockedPillars.third ? <motion.div key="locked-third" className="locked-record maximum-lock" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><LockKeyhole size={34} /><span>{pillarLabels.third}</span><strong>SEGURANÇA MÁXIMA</strong><p>IDENTIDADE ESTRATÉGICA SELADA</p><button type="button" onClick={() => openPillar("third")}><FileLock2 size={15} /> REQUERER ACESSO</button></motion.div> : <motion.div key="unlocked-third" className="released-record third-released" initial={{ opacity: 0, clipPath: "inset(0 0 100% 0)" }} animate={{ opacity: 1, clipPath: "inset(0 0 0% 0)" }}><div className="released-icon"><ShieldCheck size={34} /></div><div><span>ARQUIVO P-03 / TERCEIRO PILAR</span><h3>ADOLF HITLER</h3><p><TypeLine text="O dossiê trata seu papel como prova de uma instrumentalização consciente de violência política e radicalização — sem lealdade e sem absolvição." /></p><button type="button" className="relock-button" onClick={() => lockPillar("third")}><Lock size={14} /> TRANCAR ARQUIVO</button></div></motion.div>}
+          </AnimatePresence>
+        </article>
+      </div>
+    </section>
 
     <section className="vice-section section-frame" aria-labelledby="vice-title"><article className="vice-copy"><div className="section-heading"><span>05 / O Vício Noturno</span><h2 id="vice-title">O Gabinete &amp; Bebidas</h2></div><p>Nos salões da alta sociedade, Astrid transforma a bebida em protocolo: vinhos finos, copos de cristal e conversas que nunca devem acontecer sob o sol. O luxo Ventrue funciona como fachada para um ritual de controle e sobrevivência.</p><div className="ritual-line"><Wine size={18} /><span>VINHO RESERVA</span><ChevronRight size={14} /><GlassWater size={18} /><span>RITUAL NOTURNO</span></div></article><figure className="vice-image"><img src="/drink.jpg" alt="Registro do gabinete e bebidas" /><figcaption>GABINETE / APÓS O ANOITECER</figcaption></figure></section>
 
@@ -135,7 +194,7 @@ export default function AstridArchive() {
 
     <footer className="archive-footer"><Archive size={14} /><span>FIM DO ARQUIVO // REGISTRO NÃO É ABSOLVIÇÃO</span><span>DEPT_INTEL_REICH · 1943</span></footer>
 
-    <AnimatePresence>{thirdPillarOpen && <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} role="dialog" aria-modal="true" aria-labelledby="third-modal-title"><motion.article className="red-folder" initial={{ y: 30, rotate: -2, opacity: 0 }} animate={{ y: 0, rotate: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }}><button type="button" className="modal-close" onClick={() => setThirdPillarOpen(false)} aria-label="Fechar arquivo">×</button><span className="folder-tab">CLEARANCE LEVEL 5</span><p>ARQUIVO / TERCEIRO PILAR</p><h3 id="third-modal-title">ADOLF HITLER</h3><div className="redaction-lines" /><p className="folder-text">O arquivo descreve como Astrid tentou instrumentalizar o regime nazista para ampliar o conflito europeu. A lógica é registrada como uma escolha consciente de violência política e radicalização — sem lealdade, mas também sem absolvição.</p><div className="folder-stamp">EVIDÊNCIA DE CUMPLICIDADE</div></motion.article></motion.div>}</AnimatePresence>
+    <AnimatePresence>{activePillar && <motion.div className="modal-backdrop auth-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} role="dialog" aria-modal="true" aria-labelledby="auth-title"><motion.article className="auth-terminal" initial={{ y: 24, opacity: 0, scale: .96 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 16, opacity: 0 }}><button type="button" className="modal-close" onClick={() => setActivePillar(null)} aria-label="Fechar autenticação">×</button><div className="auth-terminal-header"><Radio size={14} /> ABW/INTEL · GATEKEEPER_1790</div>{unlocking ? <motion.div className="unlock-sequence" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><motion.div animate={{ rotate: [0, -15, 10, 0], scale: [1, 1.2, 1] }} transition={{ duration: .7 }}><Unlock size={52} /></motion.div><strong>TRAVA LIBERADA</strong><p><TypeLine text="CÓDIGO VALIDADO. REVELANDO DOCUMENTO..." /></p></motion.div> : <motion.form onSubmit={validatePillarCode} animate={accessDenied ? { x: [0, -10, 9, -7, 5, 0] } : { x: 0 }} transition={{ duration: .38 }}><div className="auth-sigil"><LockKeyhole size={43} /><span>CLEARANCE<br />LEVEL 5</span></div><p className="auth-kicker">AUTENTICAÇÃO NECESSÁRIA · {pillarLabels[activePillar]}</p><h3 id="auth-title">INSIRA O CÓDIGO<br />DE ACESSO</h3><label htmlFor="pillar-code">CHAVE DE DECRIPTAÇÃO</label><div className="auth-input-row"><input id="pillar-code" value={accessCode} onChange={(event) => { setAccessCode(event.target.value); setAccessDenied(false); }} inputMode="numeric" autoComplete="off" autoFocus aria-describedby={accessDenied ? "access-denied" : undefined} /><button type="submit">VALIDAR</button></div><AnimatePresence>{accessDenied && <motion.p id="access-denied" className="access-denied" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><XCircle size={15} /> ACESSO NEGADO: CÓDIGO INVÁLIDO</motion.p>}</AnimatePresence></motion.form>}</motion.article></motion.div>}</AnimatePresence>
     <AnimatePresence>{medicalOpen && <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} role="dialog" aria-modal="true" aria-label="Alerta médico"><motion.article className="medical-modal" initial={{ scale: .85, rotate: -1 }} animate={{ scale: 1, rotate: [0, .5, -.4, 0] }} exit={{ scale: .9 }}><button type="button" className="modal-close" onClick={() => setMedicalOpen(false)} aria-label="Fechar alerta">×</button><div className="modal-static" /><span>ERRO 404_ANOMALIA</span><h3>VITAIS INEXISTENTES</h3><p>Ausência de pulso e temperatura corporal. O sujeito consumiu o estoque de transfusão de sangue do hospital militar.</p></motion.article></motion.div>}</AnimatePresence>
   </motion.main>;
 }
